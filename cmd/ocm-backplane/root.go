@@ -21,9 +21,11 @@ import (
 	"strings"
 
 	"github.com/openshift/backplane-cli/cmd/ocm-backplane/cloud"
-	"github.com/openshift/backplane-cli/cmd/ocm-backplane/upgrade"
+	"github.com/openshift/backplane-cli/cmd/ocm-backplane/managedJob"
 	"github.com/openshift/backplane-cli/cmd/ocm-backplane/script"
 	"github.com/openshift/backplane-cli/cmd/ocm-backplane/status"
+	"github.com/openshift/backplane-cli/cmd/ocm-backplane/upgrade"
+        "github.com/openshift/backplane-cli/cmd/ocm-backplane/managedJob"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -86,4 +88,5 @@ func init() {
 	rootCmd.AddCommand(cloud.CloudCmd)
 	rootCmd.AddCommand(script.NewScriptCmd())
 	rootCmd.AddCommand(status.StatusCmd)
+	rootCmd.AddCommand(managedJob.NewManagedJobCmd())
 }
