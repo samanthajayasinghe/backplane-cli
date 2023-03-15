@@ -11,7 +11,6 @@ import (
 	logger "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	BackplaneApi "github.com/openshift/backplane-api/pkg/client"
@@ -187,8 +186,13 @@ func runLogin(cmd *cobra.Command, argv []string) (err error) {
 	rc.CurrentContext = targetContextNickName
 
 	// Save the config.
-	configAccess := clientcmd.NewDefaultPathOptions()
-	err = clientcmd.ModifyConfig(configAccess, rc, true)
+	//configAccess := clientcmd.NewDefaultPathOptions()
+	//err = clientcmd.ModifyConfig(configAccess, rc, true)
+
+	//save config to current session
+	path, _ := utils.CreateClusterKubeConfig(clusterId, rc)
+	logger.Infof("export KUBECONFIG=" + path)
+
 	logger.Debugln("Wrote OCM configuration")
 
 	return err
