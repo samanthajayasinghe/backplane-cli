@@ -103,4 +103,5 @@ func init() {
 	rootCmd.AddCommand(testJob.NewTestJobCommand())
 	rootCmd.AddCommand(upgrade.UpgradeCmd)
 	rootCmd.AddCommand(version.VersionCmd)
+	rootCmd.AddCommand(monitoring.MonitoringCmd())
 }
