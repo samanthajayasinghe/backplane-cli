@@ -117,15 +117,6 @@ func init() {
 
 func runMonitoring(cmd *cobra.Command, argv []string) error {
 
-	// check if the cluster is Hypershift
-	isHypershift, err := utils.CheckHypershift()
-	if err != nil {
-		return err
-	}
-	if isHypershift {
-		return fmt.Errorf("this is a Hypershift cluster. Monitoring for Hypershift clusters is not supported by Backplane. Please refer to <doc link> for more information")
-	}
-
 	// Handling flags [command line agruments]
 
 	monitoringName := argv[0]
@@ -154,7 +145,7 @@ func runMonitoring(cmd *cobra.Command, argv []string) error {
 	//checks namespace
 	if monitoringArgs.namespace == "openshift-monitoring" {
 		//checks cluster version
-		currentClusterInfo, err := utils.GetBackplaneClusterFromConfig()
+		currentClusterInfo, err := utils.DefaultClusterUtils.GetBackplaneClusterFromConfig()
 		if err != nil {
 			return err
 		}
@@ -342,7 +333,7 @@ func serveUrl(hasUrl, hasNs bool, cfg *restclient.Config) (*url.URL, error) {
 			return nil, err
 		}
 		// verify if the provided url matches the current login cluster
-		currentClusterInfo, err := utils.GetBackplaneClusterFromConfig()
+		currentClusterInfo, err := utils.DefaultClusterUtils.GetBackplaneClusterFromConfig()
 		if err != nil {
 			return nil, err
 		}

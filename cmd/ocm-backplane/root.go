@@ -33,6 +33,7 @@ import (
 	"github.com/openshift/backplane-cli/cmd/ocm-backplane/testJob"
 	"github.com/openshift/backplane-cli/cmd/ocm-backplane/upgrade"
 	"github.com/openshift/backplane-cli/cmd/ocm-backplane/version"
+	"github.com/openshift/backplane-cli/cmd/ocm-backplane/monitoring"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
