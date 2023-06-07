@@ -64,7 +64,7 @@ var MonitoringCmd = &cobra.Command{
 	Use:          fmt.Sprintf("monitoring <%s>", strings.Join(validArgs, "|")),
 	Short:        "Create a local proxy to the monitoring UI",
 	Long:         fmt.Sprintf(`It will proxy to the monitoring UI including %s.`, strings.Join(validArgs, ",")),
-	Args:         cobra.ExactValidArgs(1),
+	Args:         cobra.MatchAll(cobra.MinimumNArgs(1), cobra.OnlyValidArgs),
 	ValidArgs:    validArgs,
 	RunE:         runMonitoring,
 	SilenceUsage: true,
