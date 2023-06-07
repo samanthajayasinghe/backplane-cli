@@ -37,6 +37,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/openshift/backplane-cli/pkg/cli/config"
 	"github.com/openshift/backplane-cli/pkg/utils"
 )
 
@@ -194,7 +195,25 @@ func runMonitoring(cmd *cobra.Command, argv []string) error {
 	// Test if the monitoring stack works, by sending a request to backend/backplane-api
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
-		log.Fatal(err)
+
+		log.Fatalf("connecting to server %v", err)
+	}
+
+	log.Printf("Im here")
+
+	// Add http proxy transport
+	proxyUrl, err := getProxyUrl()
+	if err != nil {
+		return err
+	}
+	if proxyUrl != "" {
+		proxyUrl, err := url.Parse(proxyUrl)
+		if err != nil {
+			return err
+		}
+		http.DefaultTransport = &http.Transport{Proxy: http.ProxyURL(proxyUrl)}
+
+		logger.Debugf("Using backplane Proxy URL: %s\n", proxyUrl)
 	}
 
 	req = setProxyRequest(req, mu, name, accessToken, isGrafana, hasNs, hasAppSelector, hasPort)
@@ -258,7 +277,16 @@ func runMonitoring(cmd *cobra.Command, argv []string) error {
 }
 
 // Setting Headers, accesToken, port and selector
-func setProxyRequest(req *http.Request, proxyUrl *url.URL, userName string, accessToken *string, isGrafana bool, hasNs bool, hasAppSelector bool, hasPort bool) *http.Request {
+func setProxyRequest(
+	req *http.Request,
+	proxyUrl *url.URL,
+	userName string,
+	accessToken *string,
+	isGrafana bool,
+	hasNs bool,
+	hasAppSelector bool,
+	hasPort bool,
+) *http.Request {
 	req.URL.Scheme = "https"
 	req.Host = proxyUrl.Host
 	req.URL.Host = proxyUrl.Host
@@ -365,4 +393,17 @@ func serveUrl(hasUrl, hasNs bool, cfg *restclient.Config) (*url.URL, error) {
 	}
 
 	return serveUrl, nil
+}
+
+// Get the proxy url
+func getProxyUrl() (proxyUrl string, err error) {
+	bpConfig, err := config.GetBackplaneConfiguration()
+
+	if err != nil {
+		return "", err
+	}
+
+	proxyUrl = bpConfig.ProxyURL
+
+	return proxyUrl, nil
 }
