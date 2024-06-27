@@ -146,6 +146,9 @@ func runLogin(cmd *cobra.Command, argv []string) (err error) {
 		clusterKey = argv[0]
 	case LoginTypeExistingKubeConfig:
 		clusterKey, err = getClusterIDFromExistingKubeConfig()
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("please make sure the PD API Key is configured correctly in the config file")
 	}
