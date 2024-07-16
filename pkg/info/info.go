@@ -4,6 +4,8 @@ package info
 
 import (
 	"fmt"
+	"runtime/debug"
+	"strings"
 )
 
 const (
@@ -55,5 +57,33 @@ var (
 	// This will be set via Goreleaser during the build process
 	Version string
 
+	// ReadBuildInfo is a function that read the build info from go build.
+	ReadBuildInfo = debug.ReadBuildInfo
+
 	UpstreamREADMETagged = fmt.Sprintf(UpstreamREADMETemplate, Version)
 )
+
+type InfoService interface {
+	// get the binary version of the current build from available sources
+	GetBuildVersion() string
+}
+
+type DefaultInfoServiceImpl struct {
+}
+
+func (i *DefaultInfoServiceImpl) GetBuildVersion() string {
+	// If the Version is set by Goreleaser, return it directly.
+	if len(Version) > 0 {
+		return Version
+	}
+
+	// otherwise, return the build info from Go build if available.
+	buildInfo, available := ReadBuildInfo()
+	if available {
+		return strings.TrimLeft(buildInfo.Main.Version, "v")
+	}
+
+	return "unknown"
+}
+
+var DefaultInfoService InfoService = &DefaultInfoServiceImpl{}
