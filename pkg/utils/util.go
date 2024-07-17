@@ -243,7 +243,7 @@ func CheckBackplaneVersion(cmd *cobra.Command) {
 	// GitHub API keeps the v prefix in front which causes mismatch with info.Version
 	latestVersion := strings.TrimLeft(latestVersionTag.TagName, "v")
 
-	currentVersion := info.DefaultInfoService.GetBuildVersion()
+	currentVersion := info.DefaultInfoService.GetVersion()
 	// Check if the local version is already up-to-date
 	if latestVersion == currentVersion {
 		logger.WithField("Current version", currentVersion).Info("Already up-to-date")

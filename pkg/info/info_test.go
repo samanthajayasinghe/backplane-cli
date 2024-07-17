@@ -27,21 +27,21 @@ var _ = Describe("Info", func() {
 		It("Should return the pre-set Version is available", func() {
 			info.Version = "whatever"
 
-			version := info.DefaultInfoService.GetBuildVersion()
+			version := info.DefaultInfoService.GetVersion()
 			Expect(version).To(Equal("whatever"))
 		})
 		It("Should return a version when go bulid info is available and there is no pre-set Version", func() {
 			info.Version = ""
 			info.ReadBuildInfo = mockReadBuildInfoAvail
 
-			version := info.DefaultInfoService.GetBuildVersion()
+			version := info.DefaultInfoService.GetVersion()
 			Expect(version).To(Equal("1.2.3"))
 		})
 		It("Should return an unknown when no way to determine version", func() {
 			info.Version = ""
 			info.ReadBuildInfo = mockReadBuildInfoNotAvail
 
-			version := info.DefaultInfoService.GetBuildVersion()
+			version := info.DefaultInfoService.GetVersion()
 			Expect(version).To(Equal("unknown"))
 		})
 	})

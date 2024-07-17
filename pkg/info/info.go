@@ -64,16 +64,16 @@ var (
 )
 
 type InfoService interface {
-	// get the binary version of the current build from available sources
-	GetBuildVersion() string
+	// get the current binary version from available sources
+	GetVersion() string
 }
 
 type DefaultInfoServiceImpl struct {
 }
 
-func (i *DefaultInfoServiceImpl) GetBuildVersion() string {
+func (i *DefaultInfoServiceImpl) GetVersion() string {
 	// If the Version is set by Goreleaser, return it directly.
-	if len(Version) > 0 {
+	if Version != "" {
 		return Version
 	}
 
