@@ -116,7 +116,7 @@ mock-gen:
 	mockgen -destination=./pkg/utils/mocks/shellCheckerMock.go -package=mocks github.com/openshift/backplane-cli/pkg/utils ShellCheckerInterface
 	mockgen -destination=./pkg/pagerduty/mocks/clientMock.go -package=mocks github.com/openshift/backplane-cli/pkg/pagerduty PagerDutyClient
 	mockgen -destination=./pkg/jira/mocks/jiraMock.go -package=mocks github.com/openshift/backplane-cli/pkg/jira IssueServiceInterface
-	mockgen -destination=./pkg/info/mocks/infoMock.go -package=mocks github.com/openshift/backplane-cli/pkg/info InfoService
+	mockgen -destination=./pkg/info/mocks/infoBuildMock.go -package=mocks github.com/openshift/backplane-cli/pkg/info BuildInfoService
 
 .PHONY: build-image
 build-image:

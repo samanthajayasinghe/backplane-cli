@@ -58,10 +58,14 @@ var (
 	Version string
 
 	// ReadBuildInfo is a function that read the build info from go build.
-	ReadBuildInfo = debug.ReadBuildInfo
+	//ReadBuildInfo = debug.ReadBuildInfo
 
 	UpstreamREADMETagged = fmt.Sprintf(UpstreamREADMETemplate, Version)
 )
+
+type BuildInfoService interface {
+	ReadBuildInfo() (info *debug.BuildInfo, ok bool)
+}
 
 type InfoService interface {
 	// get the current binary version from available sources
@@ -71,6 +75,9 @@ type InfoService interface {
 type DefaultInfoServiceImpl struct {
 }
 
+type DefaultInfoBuildServiceImpl struct {
+}
+
 func (i *DefaultInfoServiceImpl) GetVersion() string {
 	// If the Version is set by Goreleaser, return it directly.
 	if Version != "" {
@@ -78,7 +85,7 @@ func (i *DefaultInfoServiceImpl) GetVersion() string {
 	}
 
 	// otherwise, return the build info from Go build if available.
-	buildInfo, available := ReadBuildInfo()
+	buildInfo, available := DefaultBuildService.ReadBuildInfo()
 	if available {
 		return strings.TrimLeft(buildInfo.Main.Version, "v")
 	}
@@ -86,4 +93,11 @@ func (i *DefaultInfoServiceImpl) GetVersion() string {
 	return "unknown"
 }
 
+func (b *DefaultInfoBuildServiceImpl) ReadBuildInfo() (info *debug.BuildInfo, ok bool) {
+	// otherwise, return the build info from Go build if available.
+	return debug.ReadBuildInfo()
+
+}
+
 var DefaultInfoService InfoService = &DefaultInfoServiceImpl{}
+var DefaultBuildService BuildInfoService = &DefaultInfoBuildServiceImpl{}
