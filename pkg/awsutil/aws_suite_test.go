@@ -1,4 +1,4 @@
-package ocm
+package awsutil
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestIt(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "OCM Test Suite")
+	RunSpecs(t, "AWS Util Test Suite")
 }

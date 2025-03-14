@@ -318,16 +318,24 @@ func (cfg *QueryConfig) getIsolatedCredentials(ocmToken string) (aws.Credentials
 		SourceIp: sourceIpList,
 	}
 
-	inlinePolicy, err := awsutil.GetAssumeRoleInlinePolicy(ipAddress)
+	policy := awsutil.NewPolicyDocument(awsutil.PolicyVersion, []awsutil.PolicyStatement{})
+
+	inlinePolicy, err := policy.BuildPolicyWithRestrictedIp(ipAddress)
 	if err != nil {
 		return aws.Credentials{}, fmt.Errorf("failed to build inline policy: %w", err)
+	}
+	rawInlinePolicy, err := inlinePolicy.String()
+
+	//inlinePolicy, err := awsutil.GetAssumeRoleInlinePolicy(ipAddress)
+	if err != nil {
+		return aws.Credentials{}, fmt.Errorf("failed to get raw inline policy: %w", err)
 	}
 	targetCredentials, err := AssumeRoleSequence(
 		seedClient,
 		assumeRoleArnSessionSequence,
 		cfg.BackplaneConfiguration.ProxyURL,
 		awsutil.DefaultSTSClientProviderFunc,
-		inlinePolicy,
+		rawInlinePolicy,
 	)
 	if err != nil {
 		return aws.Credentials{}, fmt.Errorf("failed to assume role sequence: %w", err)

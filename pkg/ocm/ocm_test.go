@@ -20,8 +20,9 @@ var _ = Describe("OCM Wrapper test", func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 
 		mockOcmInterface = ocmMock.NewMockOCMInterface(mockCtrl)
-		DefaultOCMInterface = mockOcmInterface
+		mockOcmInterface.EXPECT().SetupOCMConnection().Return(nil, nil)
 
+		DefaultOCMInterface = mockOcmInterface
 	})
 
 	AfterEach(func() {
