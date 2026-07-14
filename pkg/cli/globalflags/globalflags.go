@@ -8,6 +8,7 @@ import (
 type GlobalOptions struct {
 	BackplaneURL string
 	ProxyURL     string
+	NoProxy      bool
 	Manager      bool
 	Service      bool
 }
@@ -26,6 +27,12 @@ func AddGlobalFlags(cmd *cobra.Command, opts *GlobalOptions) {
 		"proxy",
 		"",
 		"URL of HTTPS proxy",
+	)
+	cmd.PersistentFlags().BoolVar(
+		&opts.NoProxy,
+		"no-proxy",
+		false,
+		"Disable proxy usage, even if configured in the backplane config file or environment",
 	)
 	cmd.PersistentFlags().BoolVar(
 		&opts.Manager,
