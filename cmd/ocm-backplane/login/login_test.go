@@ -398,6 +398,36 @@ var _ = Describe("Login command", func() {
 			Expect(err).To(BeNil())
 		})
 
+		It("should print correct elevate command with -n flag and ocm-backplane binary name for service login", func() {
+			globalOpts.Service = true
+			err := utils.CreateTempKubeConfig(nil)
+			Expect(err).To(BeNil())
+			mockOcmInterface.EXPECT().GetOCMEnvironment().Return(ocmEnv, nil).AnyTimes()
+			mockOcmInterface.EXPECT().GetTargetCluster(testClusterID).Return(trueClusterID, testClusterID, nil)
+			mockOcmInterface.EXPECT().GetManagingCluster(trueClusterID).Return(managingClusterID, managingClusterID, true, nil).AnyTimes()
+			mockOcmInterface.EXPECT().GetServiceCluster(trueClusterID).Return(serviceClusterID, serviceClusterName, nil)
+			mockOcmInterface.EXPECT().IsClusterHibernating(gomock.Eq(serviceClusterID)).Return(false, nil).AnyTimes()
+			mockOcmInterface.EXPECT().GetOCMAccessToken().Return(&testToken, nil)
+			mockClientUtil.EXPECT().MakeRawBackplaneAPIClientWithAccessToken(backplaneAPIURI, testToken).Return(mockClient, nil)
+			mockClient.EXPECT().LoginCluster(gomock.Any(), gomock.Eq(serviceClusterID)).Return(fakeResp, nil)
+
+			// Capture stdout to verify the elevate command output
+			old := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			err = runLogin(nil, []string{testClusterID})
+
+			w.Close()
+			out, _ := io.ReadAll(r)
+			os.Stdout = old
+
+			Expect(err).To(BeNil())
+			output := string(out)
+			Expect(output).To(ContainSubstring("ocm-backplane elevate -n --"))
+			Expect(output).NotTo(ContainSubstring("ocm backplane elevate --"))
+		})
+
 		It("should login to current cluster if cluster id not provided", func() {
 			loginType = LoginTypeExistingKubeConfig
 			err := utils.CreateTempKubeConfig(nil)
