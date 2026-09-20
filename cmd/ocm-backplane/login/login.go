@@ -194,7 +194,10 @@ func runLogin(cmd *cobra.Command, argv []string) (err error) {
 
 	// Set proxy url to http client
 	proxyURL := globalOpts.ProxyURL
-	if !(bpConfig.Govcloud) {
+	if globalOpts.NoProxy {
+		proxyURL = ""
+		logger.Debugln("--no-proxy flag set, skipping proxy configuration")
+	} else if !(bpConfig.Govcloud) {
 		logger.Debugln("Setting Proxy URL from global options")
 
 		if proxyURL != "" {

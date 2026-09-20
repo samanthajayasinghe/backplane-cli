@@ -90,6 +90,7 @@ var _ = Describe("New Remediation command", func() {
 		globalOpts.Service = false
 		globalOpts.BackplaneURL = ""
 		globalOpts.ProxyURL = ""
+		globalOpts.NoProxy = false
 		_ = os.Setenv("HTTPS_PROXY", "")
 		_ = os.Setenv("HTTP_PROXY", "")
 		_ = os.Unsetenv("BACKPLANE_CONFIG")
