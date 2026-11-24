@@ -9,6 +9,12 @@ reviewers:
   - Tessg22
   - smarthall
   - diakovnec
+  - geowa4
+  - AlexSmithGH
+  - eth1030
+  - BATMAN-JD
+  - bergmannf
+  - RaphaelBut
 
 approvers:
   - feichashao
@@ -19,6 +25,12 @@ approvers:
   - MitaliBhalla
   - smarthall
   - diakovnec
+  - geowa4
+  - AlexSmithGH
+  - eth1030
+  - BATMAN-JD
+  - bergmannf
+  - RaphaelBut
 
 maintainers:
   - feichashao
@@ -26,3 +38,9 @@ maintainers:
   - bmeng
   - samanthajayasinghe
   - xiaoyu74
+  - geowa4
+  - AlexSmithGH
+  - eth1030
+  - BATMAN-JD
+  - bergmannf
+  - RaphaelBut

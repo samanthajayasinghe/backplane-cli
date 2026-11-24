@@ -533,6 +533,76 @@ var _ = Describe("getIsolatedCredentials", func() {
 			Expect(policy).NotTo(ContainSubstring("192.168.1.1"))
 			Expect(err).To(BeNil())
 		})
+
+		It("should retain enabled ROSA Boundary 54.243.x IPs as /32 and exclude disabled/non-approved IPs", func() {
+			// ROSA Boundary (SRE ECS Fargate) uses direct NAT egress in the 54.243.x range.
+			boundaryEnabled := cmv1.NewTrustedIp().ID("54.243.179.5").Enabled(true)
+			boundaryEnabled2 := cmv1.NewTrustedIp().ID("54.243.100.100").Enabled(true)
+			boundaryDisabled := cmv1.NewTrustedIp().ID("54.243.200.200").Enabled(false)
+			existingProxy := cmv1.NewTrustedIp().ID("209.10.10.10").Enabled(true)
+			nonApproved := cmv1.NewTrustedIp().ID("200.20.20.20").Enabled(true)
+			expectedIPList, err := cmv1.NewTrustedIpList().Items(boundaryEnabled, boundaryEnabled2, boundaryDisabled, existingProxy, nonApproved).Build()
+			Expect(err).To(BeNil())
+			mockOcmInterface.EXPECT().GetTrustedIPList(gomock.Any()).Return(expectedIPList, nil)
+
+			IPList, err := getTrustedIPList(testQueryConfig.OcmConnection)
+			Expect(err).To(BeNil())
+			// Enabled ROSA Boundary IPs are retained and represented as /32
+			Expect(IPList.SourceIp).To(ContainElement("54.243.179.5/32"))
+			Expect(IPList.SourceIp).To(ContainElement("54.243.100.100/32"))
+			// Existing trusted ranges continue to work
+			Expect(IPList.SourceIp).To(ContainElement("209.10.10.10/32"))
+			// Disabled ROSA Boundary entry is excluded
+			Expect(IPList.SourceIp).NotTo(ContainElement("54.243.200.200/32"))
+			// Unrelated non-approved IP is filtered out
+			Expect(IPList.SourceIp).NotTo(ContainElement("200.20.20.20/32"))
+
+			policy, err := getTrustedIPInlinePolicy(IPList)
+			Expect(err).To(BeNil())
+			Expect(policy).To(ContainSubstring("54.243.179.5"))
+			Expect(policy).NotTo(ContainSubstring("54.243.200.200"))
+			Expect(policy).NotTo(ContainSubstring("200.20.20.20"))
+		})
+
+		It("should retain all four regional ROSA Boundary egress IPs as /32", func() {
+			// ROSA Boundary NAT egress EIPs, one per deployed region.
+			stageUsEast1 := cmv1.NewTrustedIp().ID("54.243.179.5").Enabled(true)
+			stageUsWest2 := cmv1.NewTrustedIp().ID("52.38.205.178").Enabled(true)
+			prodUsEast1 := cmv1.NewTrustedIp().ID("3.87.149.155").Enabled(true)
+			prodUsWest2 := cmv1.NewTrustedIp().ID("34.210.218.56").Enabled(true)
+			// Disabled Boundary-prefixed entries must stay excluded
+			disabledUsWest2 := cmv1.NewTrustedIp().ID("52.38.1.1").Enabled(false)
+			disabledProd := cmv1.NewTrustedIp().ID("34.210.1.1").Enabled(false)
+			// Existing proxy entry keeps working, unrelated entry stays filtered out
+			existingProxy := cmv1.NewTrustedIp().ID("209.10.10.10").Enabled(true)
+			nonApproved := cmv1.NewTrustedIp().ID("200.20.20.20").Enabled(true)
+
+			expectedIPList, err := cmv1.NewTrustedIpList().Items(
+				stageUsEast1, stageUsWest2, prodUsEast1, prodUsWest2,
+				disabledUsWest2, disabledProd, existingProxy, nonApproved,
+			).Build()
+			Expect(err).To(BeNil())
+			mockOcmInterface.EXPECT().GetTrustedIPList(gomock.Any()).Return(expectedIPList, nil)
+
+			IPList, err := getTrustedIPList(testQueryConfig.OcmConnection)
+			Expect(err).To(BeNil())
+			Expect(IPList.SourceIp).To(ContainElement("54.243.179.5/32"))
+			Expect(IPList.SourceIp).To(ContainElement("52.38.205.178/32"))
+			Expect(IPList.SourceIp).To(ContainElement("3.87.149.155/32"))
+			Expect(IPList.SourceIp).To(ContainElement("34.210.218.56/32"))
+			Expect(IPList.SourceIp).To(ContainElement("209.10.10.10/32"))
+			Expect(IPList.SourceIp).NotTo(ContainElement("52.38.1.1/32"))
+			Expect(IPList.SourceIp).NotTo(ContainElement("34.210.1.1/32"))
+			Expect(IPList.SourceIp).NotTo(ContainElement("200.20.20.20/32"))
+
+			policy, err := getTrustedIPInlinePolicy(IPList)
+			Expect(err).To(BeNil())
+			Expect(policy).To(ContainSubstring("52.38.205.178/32"))
+			Expect(policy).To(ContainSubstring("3.87.149.155/32"))
+			Expect(policy).To(ContainSubstring("34.210.218.56/32"))
+			Expect(policy).NotTo(ContainSubstring("52.38.1.1"))
+			Expect(policy).NotTo(ContainSubstring("200.20.20.20"))
+		})
 	})
 
 	Context("Execute verifyTrustedIPAndGetPolicy", func() {
@@ -565,6 +635,70 @@ var _ = Describe("getIsolatedCredentials", func() {
 			Expect(err).To(BeNil())
 			Expect(policy.Version).To(Equal("2012-10-17"))
 			Expect(len(policy.Statement)).To(BeNumerically(">", 0))
+		})
+
+		It("should successfully verify the ROSA Boundary egress IP 54.243.179.5", func() {
+			// Mock the egress IP check to return the ROSA Boundary (SRE ECS Fargate) NAT IP
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = fmt.Fprint(w, "54.243.179.5")
+			}))
+			defer server.Close()
+
+			originalCheckEgressIP := CheckEgressIP
+			CheckEgressIP = func(client *http.Client, url string) (net.IP, error) {
+				return originalCheckEgressIP(client, server.URL)
+			}
+			defer func() {
+				CheckEgressIP = originalCheckEgressIP
+			}()
+
+			// OCM returns 54.243.179.5 as an enabled trusted IP
+			ip1 := cmv1.NewTrustedIp().ID("54.243.179.5").Enabled(true)
+			expectedIPList, err := cmv1.NewTrustedIpList().Items(ip1).Build()
+			Expect(err).To(BeNil())
+			mockOcmInterface.EXPECT().GetTrustedIPList(gomock.Any()).Return(expectedIPList, nil)
+
+			policy, err := verifyTrustedIPAndGetPolicy(&testQueryConfig)
+
+			Expect(err).To(BeNil())
+			Expect(policy.Version).To(Equal("2012-10-17"))
+			Expect(len(policy.Statement)).To(BeNumerically(">", 0))
+		})
+
+		It("should successfully verify every regional ROSA Boundary egress IP", func() {
+			// One NAT egress EIP per ROSA Boundary region, stage and prod.
+			for _, boundaryIP := range []string{
+				"54.243.179.5",  // stage us-east-1
+				"52.38.205.178", // stage us-west-2
+				"3.87.149.155",  // prod us-east-1
+				"34.210.218.56", // prod us-west-2
+			} {
+				func(boundaryIP string) {
+					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						_, _ = fmt.Fprint(w, boundaryIP)
+					}))
+					defer server.Close()
+
+					originalCheckEgressIP := CheckEgressIP
+					CheckEgressIP = func(client *http.Client, url string) (net.IP, error) {
+						return originalCheckEgressIP(client, server.URL)
+					}
+					defer func() {
+						CheckEgressIP = originalCheckEgressIP
+					}()
+
+					ip1 := cmv1.NewTrustedIp().ID(boundaryIP).Enabled(true)
+					expectedIPList, err := cmv1.NewTrustedIpList().Items(ip1).Build()
+					Expect(err).To(BeNil())
+					mockOcmInterface.EXPECT().GetTrustedIPList(gomock.Any()).Return(expectedIPList, nil)
+
+					policy, err := verifyTrustedIPAndGetPolicy(&testQueryConfig)
+
+					Expect(err).To(BeNil(), "expected %s to be a trusted egress IP", boundaryIP)
+					Expect(policy.Version).To(Equal("2012-10-17"))
+					Expect(len(policy.Statement)).To(BeNumerically(">", 0))
+				}(boundaryIP)
+			}
 		})
 
 		It("should fail when client IP is not in trusted range", func() {
